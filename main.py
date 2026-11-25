@@ -33,11 +33,12 @@ def verify(path, data):
     """Read back the written file and confirm it is byte-identical."""
     with open(path, "rb") as f:
         written = f.read()
-    if written != data:
+    if len(written) != len(data) or written != data:
         print(f"read-back mismatch at {path}", file=sys.stderr)
         return False
-    if hashlib.sha256(written).hexdigest() != EXPECTED_SHA256:
-        print(f"read-back sha256 mismatch at {path}", file=sys.stderr)
+    digest = hashlib.sha256(written).hexdigest()
+    if digest != EXPECTED_SHA256:
+        print(f"read-back sha256 mismatch at {path}: {digest}", file=sys.stderr)
         return False
     return True
 
@@ -65,7 +66,9 @@ def main() -> int:
     path = os.path.join(out_dir, "entry.txt")
     with open(path, "wb") as f:
         f.write(data)
-    if not verify(path, data):
+    verified = verify(path, data)
+    if not verified:
+        print(f"verification failed for {path}", file=sys.stderr)
         return 1
     print(f"wrote {len(data)} bytes to {path} sha256={digest}")
     return 0
